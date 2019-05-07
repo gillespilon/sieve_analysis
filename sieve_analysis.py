@@ -89,7 +89,7 @@ df = pd.read_csv('sieve_data.csv')
 # # Perform the analysis
 
 df['retained mass'] = df['sieve soil mass'] - df['sieve mass']
-df.dropna(subset=['sieve mass'], inplace=True)
+df = df.dropna(subset=['sieve mass'])
 # rmt = retained mass total
 rmt = df['retained mass'].sum()
 df['retained pct'] = df['retained mass'] / rmt * 100
