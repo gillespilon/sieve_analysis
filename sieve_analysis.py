@@ -28,7 +28,13 @@ Execute the script.
 import pandas as pd
 import matplotlib.cm as cm
 import numpy as np
-dotslog_c, dots_c, line_c, *_ = cm.Paired.colors
+
+
+c = cm.Paired.colors
+# c[0] c[1] ... c[11]
+# See "paired" in "qualitative colormaps"
+# https://matplotlib.org/tutorials/colors/colormaps.html
+
 
 # Enter the density of the material that was sieved.
 density = 1.32
@@ -79,7 +85,7 @@ print('number parts per g',
 
 # Create graphs
 ax = df.plot(x='particle diameter', y='passing pct', logx=True, style='.-',\
-             legend=False, color=dotslog_c, grid=True)
+             legend=False, color=c[0], grid=True)
 ax.set_xlabel('Particle diameter (micron)')
 ax.set_ylabel('Percent passing')
 ax.set_title('Percent passing versus log particle diameter (%)')
@@ -90,7 +96,7 @@ ax.figure.savefig('sieve_percent_passing_vs_logdiameter.svg', format='svg')
 ax.figure.savefig('sieve_percent_passing_vs_logdiameter.pdf', format='pdf')
 
 ax = df.plot(x='particle diameter', y='passing pct', style='.-',\
-             legend=False, color=dots_c, grid=True)
+             legend=False, color=c[1], grid=True)
 ax.set_xlabel('Particle diameter (micron)')
 ax.set_ylabel('Percent passing')
 ax.set_title('Percent passing versus particle diameter (%)')
