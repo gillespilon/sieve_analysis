@@ -91,7 +91,7 @@ ax.set_ylabel('Percent passing')
 ax.set_title('Percent passing versus log particle diameter (%)')
 ax.grid(True, which='minor', axis='x')
 for spine in 'right', 'top':
-    ax.spines[spine].set_color('none')
+    ax.spines[spine].set_visible(False)
 ax.figure.savefig('sieve_percent_passing_vs_logdiameter.svg', format='svg')
 ax.figure.savefig('sieve_percent_passing_vs_logdiameter.pdf', format='pdf')
 
@@ -102,6 +102,6 @@ ax.set_ylabel('Percent passing')
 ax.set_title('Percent passing versus particle diameter (%)')
 ax.grid(True, which='minor', axis='x')
 for spine in 'right', 'top':
-    ax.spines[spine].set_color('none')
+    ax.spines[spine].set_visible(False)
 ax.figure.savefig('sieve_percent_passing_vs_diameter.svg', format='svg')
 ax.figure.savefig('sieve_percent_passing_vs_diameter.pdf', format='pdf')
