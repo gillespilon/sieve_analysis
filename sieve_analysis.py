@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
-
-'''
+"""
 The purpose of this script is to perform a sieve analysis.
 
 A sieve analysis is used to determine the particle size distribution of a
@@ -18,31 +17,22 @@ This file has five columns:
 - sieve mass
 - sieve soil mass
 
-Clear the contents of the "sieve mass" and "sieve soil mass" columns. Enter values of "sieve mass" and "sieve soil mass" for the desired sieves. Save the file as a CSV with UTF-8 encoding.
+Clear the contents of the "sieve mass" and "sieve soil mass" columns.
+Enter values of "sieve mass" and "sieve soil mass" for the desired sieves.
+Save the file as a CSV with UTF-8 encoding.
 
 To use the script, edit the constant for the raw material being sieved.
 Execute the script.
-'''
-
+"""
 
 import pandas as pd
-import matplotlib.cm as cm
 import numpy as np
 
-
-c = cm.Paired.colors
-# c[0] c[1] ... c[11]
-# See "paired" in "qualitative colormaps"
-# https://matplotlib.org/tutorials/colors/colormaps.html
-
-
+colour1 = '#0077bb'
+colour2 = '#33bbee'
 # Enter the density of the material that was sieved.
 density = 1.32
-
-
 df = pd.read_csv('sieve_data.csv')
-
-
 df['retained mass'] = df['sieve soil mass'] - df['sieve mass']
 df = df.dropna(subset=['sieve mass'])
 # rmt = retained mass total
@@ -51,11 +41,7 @@ df['retained pct'] = df['retained mass'] / rmt * 100
 df['cumul retained pct'] = df['retained pct'].cumsum()
 df['passing pct'] = 100 - df['cumul retained pct']
 df.round(3)
-
-
 df.to_csv('sieve_results.csv')
-
-
 # Perform the geometric analysis
 # gmps = geometric mean particle size
 gmps = np.exp(((df['retained mass'] *\
@@ -81,11 +67,9 @@ nppg = 1/density * np.exp((4.5 * np.log(gsd)**2) - 3 * np.log(gmps / 10000))
 print('number parts per g',
       nppg.round(3),
       sep=" = ")
-
-
 # Create graphs
 ax = df.plot(x='particle diameter', y='passing pct', logx=True, style='.-',\
-             legend=False, color=c[0], grid=True)
+             legend=False, color=colour1, grid=True)
 ax.set_xlabel('Particle diameter (micron)')
 ax.set_ylabel('Percent passing')
 ax.set_title('Percent passing versus log particle diameter (%)')
@@ -96,7 +80,7 @@ ax.figure.savefig('sieve_percent_passing_vs_logdiameter.svg', format='svg')
 ax.figure.savefig('sieve_percent_passing_vs_logdiameter.pdf', format='pdf')
 
 ax = df.plot(x='particle diameter', y='passing pct', style='.-',\
-             legend=False, color=c[1], grid=True)
+             legend=False, color=colour2, grid=True)
 ax.set_xlabel('Particle diameter (micron)')
 ax.set_ylabel('Percent passing')
 ax.set_title('Percent passing versus particle diameter (%)')
