@@ -41,7 +41,7 @@ def main():
     path_logdiameter = "sieve_percent_passing_vs_logdiameter.svg"
     path_diameter = "sieve_percent_passing_vs_diameter.svg"
     path_file_out = Path("sieve_results.csv")
-    path_file_in = Path("sieve_data.csv")
+    # path_file_in = Path("sieve_data.csv")
     output_url = "sieve_analysis.html"
     header_title = "Sieve Analysis"
     header_id = "sieve_analysis"
@@ -49,18 +49,34 @@ def main():
     grid_alpha = 0.2
     density = 1.32
     original_stdout = ds.html_begin(
-        output_url=output_url, header_title=header_title, header_id=header_id
+        output_url=output_url,
+        header_title=header_title,
+        header_id=header_id
     )
-    ds.script_summary(script_path=Path(__file__), action="started at")
+    ds.script_summary(
+        script_path=Path(__file__),
+        action="started at"
+    )
     ds.style_graph()
-    df = pd.read_csv(path_file_in)
+    df = pd.DataFrame(
+        data={
+            "particle diameter": [4760, 2000, 841, 420, 250, 74, 10 ],
+            "sieve mass": [1, 1, 208, 191.4, 72.3, 23.1, 0.9],
+            "sieve soil mass": [1.6, 1.6, 416, 382.8, 144.6, 46.2, 1.8]
+        }
+    )
+    # df = pd.read_csv(filepath_or_buffer=path_file_in)
     df["retained mass"] = df["sieve soil mass"] - df["sieve mass"]
-    df = df.dropna(axis=0, how="any", subset=["sieve mass"])
+    df = df.dropna(
+        axis=0,
+        how="any",
+        subset=["sieve mass"]
+    )
     retained_mass_total = df["retained mass"].sum()
     df["retained percentage"] = df["retained mass"] / retained_mass_total * 100
     df["cumulative retained percentage"] = df["retained percentage"].cumsum()
     df["passing percentage"] = 100 - df["cumulative retained percentage"]
-    df.round(3).to_csv(path_file_out)
+    df.round(3).to_csv(path_or_buf=path_file_out)
     geometric_mean_particle_size = np.exp(
         ((df["retained mass"] * np.log(df["particle diameter"])).sum()) /
         retained_mass_total
