@@ -6,45 +6,33 @@ A sieve analysis is used to determine the particle size distribution of a
 granular material. Material is passed through a series of progressively
 smaller sieves. The mass of the material stopped by each sieve is determined
 as a fraction of the whole mass.
-
-[sieve_data.csv]
-(https://drive.google.com/open?id=1QuhQmVAnxEakP879FnAt-GD0ElpuT49M)
-
-This file has five columns:
-
-- std sieve
-- tyler sieve
-- particle diameter
-- sieve mass
-- sieve soil mass
-
-Clear the contents of the "sieve mass" and "sieve soil mass" columns.
-Enter values of "sieve mass" and "sieve soil mass" for the desired sieves.
-Save the file as a CSV with UTF-8 encoding.
-
-To use the script, edit the density for the raw material being sieved.
-Execute the script.
 """
 
 from pathlib import Path
 import time
 
 import matplotlib.pyplot as plt
+import datasense as ds
 import pandas as pd
 import numpy as np
-
-import datasense as ds
 
 
 def main():
     start_time = time.perf_counter()
+    cumulative_retained_percentage = "cumulative retained percentage"
     path_logdiameter = "sieve_percent_passing_vs_logdiameter.svg"
     path_diameter = "sieve_percent_passing_vs_diameter.svg"
+    retained_percentage = "retained percentage"
+    passing_percentage = "passing percentage"
     path_file_out = Path("sieve_results.csv")
-    # path_file_in = Path("sieve_data.csv")
+    particle_diameter = "particle diameter"
+    path_file_in = Path("sieve_data.csv")
+    sieve_soil_mass = "sieve soil mass"
     output_url = "sieve_analysis.html"
     header_title = "Sieve Analysis"
+    retained_mass = "retained mass"
     header_id = "sieve_analysis"
+    sieve_mass = "sieve mass"
     figsize = (8, 6)
     grid_alpha = 0.2
     density = 1.32
@@ -60,32 +48,35 @@ def main():
     ds.style_graph()
     df = pd.DataFrame(
         data={
-            "particle diameter": [4760, 2000, 841, 420, 250, 74, 10 ],
-            "sieve mass": [1, 1, 208, 191.4, 72.3, 23.1, 0.9],
-            "sieve soil mass": [1.6, 1.6, 416, 382.8, 144.6, 46.2, 1.8]
+            particle_diameter: [4760, 2000, 841, 420, 250, 74, 10],
+            sieve_mass: [1, 1, 208, 191.4, 72.3, 23.1, 0.9],
+            sieve_soil_mass: [1.6, 1.6, 416, 382.8, 144.6, 46.2, 1.8]
         }
     )
-    # df = pd.read_csv(filepath_or_buffer=path_file_in)
-    df["retained mass"] = df["sieve soil mass"] - df["sieve mass"]
+    # df = ds.read_file(file_name=path_file_in)
+    df[retained_mass] = df[sieve_soil_mass] - df[sieve_mass]
     df = df.dropna(
         axis=0,
         how="any",
-        subset=["sieve mass"]
+        subset=[sieve_mass]
     )
-    retained_mass_total = df["retained mass"].sum()
-    df["retained percentage"] = df["retained mass"] / retained_mass_total * 100
-    df["cumulative retained percentage"] = df["retained percentage"].cumsum()
-    df["passing percentage"] = 100 - df["cumulative retained percentage"]
-    df.round(3).to_csv(path_or_buf=path_file_out)
+    retained_mass_total = df[retained_mass].sum()
+    df[retained_percentage] = df[retained_mass] / retained_mass_total * 100
+    df[cumulative_retained_percentage] = df[retained_percentage].cumsum()
+    df[passing_percentage] = 100 - df[cumulative_retained_percentage]
+    # ds.save_file(
+    #     df=df.round(3),
+    #     file_name=path_file_out
+    # )
     geometric_mean_particle_size = np.exp(
-        ((df["retained mass"] * np.log(df["particle diameter"])).sum()) /
+        ((df[retained_mass] * np.log(df[particle_diameter])).sum()) /
         retained_mass_total
     )
     print(f"geometric mean particle size {geometric_mean_particle_size:10.3f}")
     geometric_standard_deviation = np.exp(
-        (((df["retained mass"] * (np.log(df["particle diameter"]) -
-         (df["retained mass"] * np.log(df["particle diameter"])).sum() /
-         retained_mass_total)**2).sum()) / retained_mass_total)**0.5
+        (((df[retained_mass] * (np.log(df[particle_diameter]) -
+         (df[retained_mass] * np.log(df[particle_diameter])).sum() /
+         retained_mass_total)**2).sum()) / retained_mass_total) ** 0.5
     )
     print(f"geometric standard deviation {geometric_standard_deviation:10.3f}")
     surface_area = 6 / density * np.exp(
@@ -105,13 +96,24 @@ def main():
         figsize=figsize
     )
     fig.suptitle(t="Sieve Analysis")
-    ax.semilogx(df["particle diameter"], df["passing percentage"])
-    ax.grid(visible=True, which="both", axis="both", alpha=grid_alpha)
+    ax.semilogx(
+        df[particle_diameter],
+        df[passing_percentage]
+    )
+    ax.grid(
+        visible=True,
+        which="both",
+        axis="both",
+        alpha=grid_alpha
+    )
     ax.set_title(label="Percent passing versus log particle diameter")
     ax.set_xlabel(xlabel="Particle diameter (micron)")
     ax.set_ylabel(ylabel="Passing (%)")
     ds.despine(ax=ax)
-    fig.savefig(fname=path_logdiameter, format="svg")
+    fig.savefig(
+        fname=path_logdiameter,
+        format="svg"
+    )
     ds.html_figure(file_name=path_logdiameter)
     fig, ax = plt.subplots(
         nrows=1,
@@ -119,18 +121,38 @@ def main():
         figsize=figsize
     )
     fig.suptitle(t="Sieve Analysis")
-    ax.plot(df["particle diameter"], df["passing percentage"])
-    ax.grid(visible=True, which="both", axis="both", alpha=grid_alpha)
+    ax.plot(
+        df[particle_diameter],
+        df[passing_percentage]
+    )
+    ax.grid(
+        visible=True,
+        which="both",
+        axis="both",
+        alpha=grid_alpha
+    )
     ax.set_title(label="Percent passing versus particle diameter")
     ax.set_xlabel(xlabel="Particle diameter (micron)")
     ax.set_ylabel(ylabel="Passing (%)")
     ds.despine(ax=ax)
-    fig.savefig(fname=path_diameter, format="svg")
+    fig.savefig(
+        fname=path_diameter,
+        format="svg"
+    )
     ds.html_figure(file_name=path_diameter)
     stop_time = time.perf_counter()
-    ds.script_summary(script_path=Path(__file__), action="finished at")
-    ds.report_summary(start_time=start_time, stop_time=stop_time)
-    ds.html_end(original_stdout=original_stdout, output_url=output_url)
+    ds.script_summary(
+        script_path=Path(__file__),
+        action="finished at"
+    )
+    ds.report_summary(
+        start_time=start_time,
+        stop_time=stop_time
+    )
+    ds.html_end(
+        original_stdout=original_stdout,
+        output_url=output_url
+    )
 
 
 if __name__ == "__main__":
