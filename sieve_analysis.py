@@ -22,156 +22,100 @@ Clear the contents of the "sieve mass" and "sieve soil mass" columns.
 Enter values of "sieve mass" and "sieve soil mass" for the desired sieves.
 Save the file as a CSV with UTF-8 encoding.
 
-To use the script, edit the constant for the raw material being sieved.
+To use the script, edit the density for the raw material being sieved.
 Execute the script.
-
-./sieve_analysis.py
-python sieve_analysis.py
 """
+
+from pathlib import Path
+import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-colour1 = '#0077bb'
-colour2 = '#33bbee'
-figure_size = (8, 6)
-# Enter the density of the material that was sieved.
-density = 1.32
-df = pd.read_csv('sieve_data.csv')
-df['retained mass'] = df['sieve soil mass'] - df['sieve mass']
-# Drop rows where empty cells are present in column 'sieve mass'
-df = df.dropna(
-    axis=0,
-    how='any',
-    subset=['sieve mass']
-)
-retained_mass_total = df['retained mass'].sum()
-df['retained pct'] = df['retained mass'] / retained_mass_total * 100
-df['cumul retained pct'] = df['retained pct'].cumsum()
-df['passing pct'] = 100 - df['cumul retained pct']
-df.round(3).to_csv('sieve_results.csv')
-# Perform the geometric analysis
-geometric_mean_particle_size = np.exp(
-    ((df['retained mass'] * np.log(df['particle diameter'])).sum()) /
-    retained_mass_total
-)
-print(
-    'geometric mean particle size',
-    np.exp(((df['retained mass'] *
-           np.log(df['particle diameter'])).sum())
-           / retained_mass_total).round(3),
-    sep=" = "
-)
-geometric_standard_deviation = np.exp(
-    (((df['retained mass'] * (np.log(df['particle diameter']) -
-     (df['retained mass'] * np.log(df['particle diameter'])).sum() /
-     retained_mass_total)**2).sum()) / retained_mass_total)**0.5
-)
-print('geometric standard deviation',
-      geometric_standard_deviation.round(3),
-      sep=" = ")
-surface_area = 6 / density * np.exp(
-    0.5 * (np.log(geometric_standard_deviation)**2) -
-    np.log(geometric_mean_particle_size / 10000))
-print('surface area',
-      surface_area.round(3),
-      sep=" = ")
-number_parts_per_g = 1 / density * \
-    np.exp(
-        (4.5 * np.log(geometric_standard_deviation)**2) -
-        3 * np.log(geometric_mean_particle_size / 10000)
+import datasense as ds
+
+
+def main():
+    start_time = time.perf_counter()
+    path_logdiameter = "sieve_percent_passing_vs_logdiameter.svg"
+    path_diameter = "sieve_percent_passing_vs_diameter.svg"
+    path_file_out = Path("sieve_results.csv")
+    path_file_in = Path("sieve_data.csv")
+    output_url = "sieve_analysis.html"
+    header_title = "Sieve Analysis"
+    header_id = "sieve_analysis"
+    figsize = (8, 6)
+    grid_alpha = 0.2
+    density = 1.32
+    original_stdout = ds.html_begin(
+        output_url=output_url, header_title=header_title, header_id=header_id
+    )
+    ds.script_summary(script_path=Path(__file__), action="started at")
+    ds.style_graph()
+    df = pd.read_csv(path_file_in)
+    df["retained mass"] = df["sieve soil mass"] - df["sieve mass"]
+    df = df.dropna(axis=0, how="any", subset=["sieve mass"])
+    retained_mass_total = df["retained mass"].sum()
+    df["retained percentage"] = df["retained mass"] / retained_mass_total * 100
+    df["cumulative retained percentage"] = df["retained percentage"].cumsum()
+    df["passing percentage"] = 100 - df["cumulative retained percentage"]
+    df.round(3).to_csv(path_file_out)
+    geometric_mean_particle_size = np.exp(
+        ((df["retained mass"] * np.log(df["particle diameter"])).sum()) /
+        retained_mass_total
+    )
+    print(f"geometric mean particle size {geometric_mean_particle_size:10.3f}")
+    geometric_standard_deviation = np.exp(
+        (((df["retained mass"] * (np.log(df["particle diameter"]) -
+         (df["retained mass"] * np.log(df["particle diameter"])).sum() /
+         retained_mass_total)**2).sum()) / retained_mass_total)**0.5
+    )
+    print(f"geometric standard deviation {geometric_standard_deviation:10.3f}")
+    surface_area = 6 / density * np.exp(
+        0.5 * (np.log(geometric_standard_deviation)**2) -
+        np.log(geometric_mean_particle_size / 10000))
+    print(f"surface area                 {surface_area:10.3f}")
+    number_parts_per_g = 1 / density * \
+        np.exp(
+            (4.5 * np.log(geometric_standard_deviation)**2) -
+            3 * np.log(geometric_mean_particle_size / 10000)
         )
-print('number parts per g',
-      number_parts_per_g.round(3),
-      sep=" = ")
-# Create first graph
-fig = plt.figure(figsize=figure_size)
-ax = fig.add_subplot(111)
-ax.semilogx(
-    df['particle diameter'],
-    df['passing pct'],
-    marker='.',
-    markersize=8,
-    linestyle='-',
-    color=colour1
-)
-ax.grid(
-    b=True,
-    which='both',
-    axis='both',
-    color='#bbbbbb'
-)
-fig.suptitle(
-    t='Sieve Analysis',
-    ha='center',
-    fontsize=15,
-    fontweight='bold'
-)
-ax.set_title(
-    label='Percent passing versus log particle diameter (%)',
-    loc='center',
-    fontsize=15,
-    fontweight='normal'
-)
-ax.set_xlabel(
-    xlabel='Particle diameter (micron)',
-    ha='center',
-    fontsize=12,
-    fontweight='normal'
-)
-ax.set_ylabel(
-    ylabel='Percent passing',
-    ha='center',
-    fontsize=12,
-    fontweight='normal'
-)
-for spine in 'right', 'top':
-    ax.spines[spine].set_visible(False)
-fig.savefig('sieve_percent_passing_vs_logdiameter.svg', format='svg')
-fig.savefig('sieve_percent_passing_vs_logdiameter.pdf', format='pdf')
-# Create second graph
-fig = plt.figure(figsize=figure_size)
-ax = fig.add_subplot(111)
-ax.plot(
-    df['particle diameter'],
-    df['passing pct'],
-    marker='.',
-    markersize=8,
-    linestyle='-',
-    color=colour2
-)
-ax.grid(
-    b=True,
-    which='both',
-    axis='both',
-    color='#bbbbbb'
-)
-fig.suptitle(
-    t='Sieve Analysis',
-    ha='center',
-    fontsize=15,
-    fontweight='bold'
-)
-ax.set_title(
-    label='Percent passing versus particle diameter (%)',
-    loc='center',
-    fontsize=15,
-    fontweight='normal'
-)
-ax.set_xlabel(
-    xlabel='Particle diameter (micron)',
-    ha='center',
-    fontsize=12,
-    fontweight='normal'
-)
-ax.set_ylabel(
-    ylabel='Percent passing',
-    ha='center',
-    fontsize=12,
-    fontweight='normal'
-)
-for spine in 'right', 'top':
-    ax.spines[spine].set_visible(False)
-fig.savefig('sieve_percent_passing_vs_diameter.svg', format='svg')
-fig.savefig('sieve_percent_passing_vs_diameter.pdf', format='pdf')
+    print(f"number parts per g           {number_parts_per_g:10.3f}")
+    print()
+    fig, ax = plt.subplots(
+        nrows=1,
+        ncols=1,
+        figsize=figsize
+    )
+    fig.suptitle(t="Sieve Analysis")
+    ax.semilogx(df["particle diameter"], df["passing percentage"])
+    ax.grid(visible=True, which="both", axis="both", alpha=grid_alpha)
+    ax.set_title(label="Percent passing versus log particle diameter")
+    ax.set_xlabel(xlabel="Particle diameter (micron)")
+    ax.set_ylabel(ylabel="Passing (%)")
+    ds.despine(ax=ax)
+    fig.savefig(fname=path_logdiameter, format="svg")
+    ds.html_figure(file_name=path_logdiameter)
+    fig, ax = plt.subplots(
+        nrows=1,
+        ncols=1,
+        figsize=figsize
+    )
+    fig.suptitle(t="Sieve Analysis")
+    ax.plot(df["particle diameter"], df["passing percentage"])
+    ax.grid(visible=True, which="both", axis="both", alpha=grid_alpha)
+    ax.set_title(label="Percent passing versus particle diameter")
+    ax.set_xlabel(xlabel="Particle diameter (micron)")
+    ax.set_ylabel(ylabel="Passing (%)")
+    ds.despine(ax=ax)
+    fig.savefig(fname=path_diameter, format="svg")
+    ds.html_figure(file_name=path_diameter)
+    stop_time = time.perf_counter()
+    ds.script_summary(script_path=Path(__file__), action="finished at")
+    ds.report_summary(start_time=start_time, stop_time=stop_time)
+    ds.html_end(original_stdout=original_stdout, output_url=output_url)
+
+
+if __name__ == "__main__":
+    main()
