@@ -55,11 +55,7 @@ def main():
     )
     # df = ds.read_file(file_name=path_file_in)
     df[retained_mass] = df[sieve_soil_mass] - df[sieve_mass]
-    df = df.dropna(
-        axis=0,
-        how="any",
-        subset=[sieve_mass]
-    )
+    df = df[df[[sieve_mass]].notna().all(axis="columns")]
     retained_mass_total = df[retained_mass].sum()
     df[retained_percentage] = df[retained_mass] / retained_mass_total * 100
     df[cumulative_retained_percentage] = df[retained_percentage].cumsum()
